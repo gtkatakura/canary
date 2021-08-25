@@ -4029,12 +4029,31 @@ void ProtocolGame::updateCoinBalance()
 		createTask(std::bind([](uint32_t playerId) {
 			Player* player = g_game.getPlayerByID(playerId);
 			if (player != nullptr) {
+
 				account::Account account(player->getAccount());
-				account.loadAccountDB();
+				if(account::ERROR_NO != account.LoadAccountDB()) {
+					SPDLOG_ERROR("Failed to load Account: [{}]", account.GetID());
+					return;
+				}
+
 				// Update coin balance
-				player->coinBalance = account.getCoins();
+				int coins = 0;
+				if(auto [ coins, result ] = account.GetCoins() ; account::ERROR_NO == result) {
+					player->coinBalance = coins;
+				} else {
+					SPDLOG_ERROR("Failed to get Coins for account: [{}]", account.GetID());
+				}
+
 				// Update tournament coin balance
-				player->tournamentCoinBalance = account.getTournamentCoins();
+				int tournament_coins = 0;
+				if(auto [ tournament_coins, result ] = account.GetCoins() ;
+						account::ERROR_NO == result) {
+					player->tournamentCoinBalance = tournament_coins;
+				} else {
+					SPDLOG_ERROR("Failed to get Tournament Coins for account: [{}]",
+						account.GetID());
+				}
+
 				player->sendCoinBalance();
 			}
 		}, player->getID()))
@@ -6761,14 +6780,14 @@ void ProtocolGame::addStoreOffer(NetworkMessage& msg, std::vector<StoreOffer*> i
 		msg.add<uint16_t>((*offer)->getCount());
 		msg.add<uint32_t>((*offer)->getPrice(player));
 		msg.addByte((*offer)->getCoinType());
-	
+
 		std::string disabled = (*offer)->getDisabledReason(player);
 		msg.addByte(!disabled.empty());
 		if (!disabled.empty()) {
 			msg.addByte(0x01);
 			msg.addString(disabled);
 		}
-	
+
 		if ((*offer)->getOfferState() == OFFER_STATE_SALE) {
 			time_t mytime;
 			mytime = time(NULL);
@@ -6780,7 +6799,7 @@ void ProtocolGame::addStoreOffer(NetworkMessage& msg, std::vector<StoreOffer*> i
 				msg.add<uint32_t>((*offer)->getBasePrice());
 			} else {
 				msg.addByte(OFFER_STATE_NONE);
-			} 
+			}
 		} else {
 			msg.addByte((*offer)->getOfferState());
 		}
