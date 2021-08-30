@@ -4031,27 +4031,27 @@ void ProtocolGame::updateCoinBalance()
 			if (player != nullptr) {
 
 				account::Account account(player->getAccount());
-				if(account::ERROR_NO != account.LoadAccountDB()) {
-					SPDLOG_ERROR("Failed to load Account: [{}]", account.GetID());
+				if(account::ERROR_NO != account.loadAccountDB()) {
+					SPDLOG_ERROR("Failed to load Account: [{}]", account.getID());
 					return;
 				}
 
 				// Update coin balance
 				int coins = 0;
-				if(auto [ coins, result ] = account.GetCoins() ; account::ERROR_NO == result) {
+				if(auto [ coins, result ] = account.getCoins() ; account::ERROR_NO == result) {
 					player->coinBalance = coins;
 				} else {
-					SPDLOG_ERROR("Failed to get Coins for account: [{}]", account.GetID());
+					SPDLOG_ERROR("Failed to get Coins for account: [{}]", account.getID());
 				}
 
 				// Update tournament coin balance
 				int tournament_coins = 0;
-				if(auto [ tournament_coins, result ] = account.GetCoins() ;
+				if(auto [ tournament_coins, result ] = account.getCoins() ;
 						account::ERROR_NO == result) {
 					player->tournamentCoinBalance = tournament_coins;
 				} else {
 					SPDLOG_ERROR("Failed to get Tournament Coins for account: [{}]",
-						account.GetID());
+						account.getID());
 				}
 
 				player->sendCoinBalance();
@@ -6731,12 +6731,12 @@ void ProtocolGame::openStore()
 	// First sending categories without subcategories
 	std::vector<StoreCategory> categories = g_store.getStoreCategories();
 	for (auto it = categories.begin(), end = categories.end(); it != end; ++it) {
-		msg.addString((*it).name);
+		msg.addString((*it).m_name);
 
 		msg.addByte(OFFER_STATE_NONE);
 
 		msg.addByte(1);
-		msg.addString((*it).icon);
+		msg.addString((*it).m_icon);
 
 		msg.add<uint16_t>(0x00);
 	}
